@@ -10,21 +10,30 @@ struct KeyboardSwitcherApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBar!
     private var axTimer: Timer?
+    private let tap = InputTap()
+    private var enabled = true
 
     func applicationWillTerminate(_ notification: Notification) {
         axTimer?.invalidate()
         axTimer = nil
+        tap.stop()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Logger.log("Languiny starting…")
         menuBar = MenuBar()
+        menuBar.onToggleEnable = { [weak self] newValue in
+            self?.setProcessing(newValue)
+        }
         ensureDefaultLayoutPair()
         menuBar.updateToggleTitle()
         let trusted = isTrustedForAccessibility()
-        menuBar.updateAccessibilityStatus(trusted)
+        menuBar.updateStatus(enabled: enabled, axGranted: trusted)
         startAXStatusTimer()
-        if !trusted {
+        if trusted {
+            tap.setup()
+            tap.start()
+        } else {
             promptForAccessibility()
         }
         // Test engine calls
@@ -38,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         axTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self else { return }
             let trusted = isTrustedForAccessibility()
-            self.menuBar.updateAccessibilityStatus(trusted)
+            self.menuBar.updateStatus(enabled: self.enabled, axGranted: trusted)
         }
         axTimer?.tolerance = 0.5
     }
@@ -65,6 +74,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
         }
-        menuBar.updateAccessibilityStatus(true)
+        tap.setup()
+        tap.start()
+        menuBar.updateStatus(enabled: enabled, axGranted: true)
+    }
+
+    private func setProcessing(_ newValue: Bool) {
+        enabled = newValue
+        if newValue {
+            tap.start()
+        } else {
+            tap.stop()
+        }
+        menuBar.updateStatus(enabled: newValue, axGranted: isTrustedForAccessibility())
     }
 }

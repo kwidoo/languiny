@@ -5,8 +5,10 @@ final class MenuBar {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var menu: NSMenu!
     private var toggleItem: NSMenuItem!
-    private var optionBypassItem: NSMenuItem!
-    private var appModeItem: NSMenuItem!
+    private var enableItem: NSMenuItem!
+
+    private var isEnabled = true
+    var onToggleEnable: ((Bool) -> Void)?
 
     init() {
         setup()
@@ -18,29 +20,40 @@ final class MenuBar {
             button.image?.isTemplate = true
         }
         menu = NSMenu()
+        enableItem = NSMenuItem(title: "Disable", action: #selector(toggleEnable), keyEquivalent: "")
+        menu.addItem(enableItem)
         toggleItem = NSMenuItem(title: "Toggle Layout", action: #selector(toggleLayout), keyEquivalent: "")
         menu.addItem(toggleItem)
-        menu.addItem(NSMenuItem(title: "Enable", action: #selector(toggleEnable), keyEquivalent: ""))
-        optionBypassItem = NSMenuItem(title: "Bypass Option Keys", action: #selector(toggleOptionBypass), keyEquivalent: "")
-        optionBypassItem.state = shouldBypassOption() ? .on : .off
-        menu.addItem(optionBypassItem)
-        appModeItem = NSMenuItem(title: "Whitelist Mode", action: #selector(toggleAppMode), keyEquivalent: "")
-        appModeItem.state = loadAppListMode() == .whitelist ? .on : .off
-        menu.addItem(appModeItem)
-        menu.addItem(NSMenuItem(title: "Toggle Current App", action: #selector(toggleCurrentApp), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ","))
         menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "About Languiny", action: #selector(openAbout), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
         updateToggleTitle()
     }
 
-    func updateAccessibilityStatus(_ trusted: Bool) {
+    func updateStatus(enabled: Bool, axGranted: Bool) {
+        setEnabled(enabled)
+        updateAccessibility(axGranted)
+    }
+
+    private func updateAccessibility(_ trusted: Bool) {
         DispatchQueue.main.async {
-            self.statusItem.button?.contentTintColor = trusted ? .systemGreen : .systemRed
+            self.statusItem.button?.contentTintColor = trusted ? .controlAccentColor : .systemRed
             self.statusItem.button?.toolTip = trusted ? "Accessibility: Enabled" : "Accessibility: Missing"
         }
     }
+
+    func setEnabled(_ enabled: Bool) {
+        isEnabled = enabled
+        DispatchQueue.main.async {
+            self.enableItem.title = enabled ? "Disable" : "Enable"
+            let symbol = enabled ? "keyboard" : "keyboard.slash"
+            self.statusItem.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+            self.statusItem.button?.image?.isTemplate = true
+        }
+    }
+
     func updateToggleTitle() {
         DispatchQueue.main.async {
             if let pair = loadLayoutPair(), let currentID = getCurrentLayoutID() {
@@ -56,28 +69,23 @@ final class MenuBar {
     @objc private func toggleLayout() {
         if toggleLayoutPair() { updateToggleTitle() }
     }
-    @objc private func toggleEnable() { Logger.log("Toggle enable") }
-    @objc private func toggleOptionBypass() {
-        let newValue = !shouldBypassOption()
-        setBypassOption(newValue)
-        optionBypassItem.state = newValue ? .on : .off
+
+    @objc private func toggleEnable() {
+        setEnabled(!isEnabled)
+        onToggleEnable?(isEnabled)
     }
-    @objc private func toggleAppMode() {
-        let newMode: AppListMode = loadAppListMode() == .whitelist ? .blacklist : .whitelist
-        saveAppListMode(newMode)
-        appModeItem.state = newMode == .whitelist ? .on : .off
-    }
-    @objc private func toggleCurrentApp() {
-        if let app = NSWorkspace.shared.frontmostApplication, let id = app.bundleIdentifier {
-            var list = loadAppList()
-            if list.contains(id) {
-                list.remove(id)
-            } else {
-                list.insert(id)
-            }
-            saveAppList(list)
-        }
-    }
+
     @objc private func openPrefs() { Logger.log("Open prefs") }
+
+    @objc private func openAbout() {
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let engineVer = engineVersion()
+        let options: [NSApplication.AboutPanelOptionKey: Any] = [
+            .applicationVersion: "\(appVersion) (Engine \(engineVer))"
+        ]
+        NSApp.orderFrontStandardAboutPanel(options: options)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc private func quit() { NSApp.terminate(nil) }
 }

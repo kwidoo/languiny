@@ -14,3 +14,9 @@ public func shouldSwitch(_ s: String, current: Int32) -> Bool {
         ShouldSwitch(cstr, current) > 0
     }
 }
+
+public func engineVersion() -> String {
+    guard let res = EngineVersion() else { return "unknown" }
+    defer { FreeCString(res) }
+    return String(cString: res)
+}
