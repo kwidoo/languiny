@@ -11,12 +11,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBar!
     private var axTimer: Timer?
 
+    func applicationWillTerminate(_ notification: Notification) {
+        axTimer?.invalidate()
+        axTimer = nil
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         Logger.log("Languiny starting…")
         menuBar = MenuBar()
-        menuBar.updateAccessibilityStatus(isTrustedForAccessibility())
+        let trusted = isTrustedForAccessibility()
+        menuBar.updateAccessibilityStatus(trusted)
         startAXStatusTimer()
-        if !isTrustedForAccessibility() {
+        if !trusted {
             promptForAccessibility()
         }
         // Test engine calls
@@ -32,11 +38,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let trusted = isTrustedForAccessibility()
             self.menuBar.updateAccessibilityStatus(trusted)
         }
+        axTimer?.tolerance = 0.5
     }
 
     private func promptForAccessibility() {
         while !isTrustedForAccessibility() {
+            NSApp.activate(ignoringOtherApps: true)
             let alert = NSAlert()
+            alert.alertStyle = .warning
             alert.messageText = "Accessibility Permission Required"
             alert.informativeText =
                 "Please enable Accessibility for Languiny in System Settings → Privacy & Security → Accessibility."

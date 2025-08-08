@@ -23,9 +23,11 @@ final class MenuBar {
     }
 
     func updateAccessibilityStatus(_ trusted: Bool) {
-        statusItem.button?.contentTintColor = trusted ? .systemGreen : .systemRed
+        DispatchQueue.main.async {
+            self.statusItem.button?.contentTintColor = trusted ? .systemGreen : .systemRed
+            self.statusItem.button?.toolTip = trusted ? "Accessibility: Enabled" : "Accessibility: Missing"
+        }
     }
-
     @objc private func toggleEnable() { Logger.log("Toggle enable") }
     @objc private func openPrefs() { Logger.log("Open prefs") }
     @objc private func quit() { NSApp.terminate(nil) }
