@@ -2,7 +2,7 @@ package main
 
 /*
 #cgo CFLAGS: -std=gnu11
-#cgo LDFLAGS: 
+#cgo LDFLAGS:
 #include <stdlib.h>
 */
 import "C"

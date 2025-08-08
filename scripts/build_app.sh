@@ -29,13 +29,21 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Languiny",
+            dependencies: ["engine"],
             path: ".",
-            exclude: ["Resources"],
+            exclude: ["Resources", "Tests", "CEngine"],
             sources: ["App", "Core", "UI", "Bridging"],
             resources: [ .process("Resources") ],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-force_load", "-Xlinker", "__LIB_A__"]) 
             ]
+        ),
+        // Clang module exposing C headers for the engine
+        .target(
+            name: "engine",
+            path: "CEngine",
+            exclude: ["engine.c"],
+            publicHeadersPath: "."
         )
     ]
 )

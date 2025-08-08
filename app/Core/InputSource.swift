@@ -1,5 +1,5 @@
-import Foundation
 import Carbon
+import Foundation
 
 struct InputSourceInfo: Identifiable {
     let id: String
@@ -11,23 +11,28 @@ struct InputSourceInfo: Identifiable {
 /// names and language tags. Only keyboard layouts are included.
 func listInputSources() -> [InputSourceInfo] {
     let filter: [CFString: Any] = [
-        kTISPropertyInputSourceCategory: kTISCategoryKeyboardInputSource,
-        kTISPropertyInputSourceType: kTISTypeKeyboardLayout,
-        kTISPropertyInputSourceIsEnabled: true
+        kTISPropertyInputSourceCategory: kTISCategoryKeyboardInputSource as CFString,
+        kTISPropertyInputSourceType: kTISTypeKeyboardLayout as CFString,
+        kTISPropertyInputSourceIsEnabled: true,
     ]
-    guard let cfList = TISCreateInputSourceList(filter as CFDictionary, false)
-        .takeRetainedValue() as? [TISInputSource] else {
+    guard
+        let cfList = TISCreateInputSourceList(filter as CFDictionary, false)?.takeRetainedValue()
+            as? [TISInputSource]
+    else {
         return []
     }
     return cfList.compactMap { src in
         guard
-            let id = TISGetInputSourceProperty(src, kTISPropertyInputSourceID)?
-                .takeUnretainedValue() as? String,
-            let name = TISGetInputSourceProperty(src, kTISPropertyLocalizedName)?
-                .takeUnretainedValue() as? String
+            let idPointer = TISGetInputSourceProperty(src, kTISPropertyInputSourceID),
+            let id = Unmanaged<CFString>.fromOpaque(idPointer).takeUnretainedValue() as String?,
+            let namePointer = TISGetInputSourceProperty(src, kTISPropertyLocalizedName),
+            let name = Unmanaged<CFString>.fromOpaque(namePointer).takeUnretainedValue() as String?
         else { return nil }
-        let langs = (TISGetInputSourceProperty(src, kTISPropertyInputSourceLanguages)?
-            .takeUnretainedValue() as? [String]) ?? []
+        let langsPointer = TISGetInputSourceProperty(src, kTISPropertyInputSourceLanguages)
+        let langs =
+            langsPointer != nil
+            ? (Unmanaged<CFArray>.fromOpaque(langsPointer!).takeUnretainedValue() as? [String])
+                ?? [] : []
         return InputSourceInfo(id: id, name: name, languages: langs)
     }
 }
@@ -37,16 +42,20 @@ func getCurrentLayoutID() -> String? {
     guard let src = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else {
         return nil
     }
-    return TISGetInputSourceProperty(src, kTISPropertyInputSourceID)?
-        .takeUnretainedValue() as? String
+    guard let idPointer = TISGetInputSourceProperty(src, kTISPropertyInputSourceID) else {
+        return nil
+    }
+    return Unmanaged<CFString>.fromOpaque(idPointer).takeUnretainedValue() as String?
 }
 
 /// Activates the input source matching the provided identifier.
 @discardableResult
 func setLayout(by id: String) -> Bool {
-    let filter: [CFString: Any] = [kTISPropertyInputSourceID: id]
-    guard let list = TISCreateInputSourceList(filter as CFDictionary, false)
-        .takeRetainedValue() as? [TISInputSource], let src = list.first else {
+    let filter: [CFString: Any] = [kTISPropertyInputSourceID: id as CFString]
+    guard
+        let list = TISCreateInputSourceList(filter as CFDictionary, false)?.takeRetainedValue()
+            as? [TISInputSource], let src = list.first
+    else {
         return false
     }
     return TISSelectInputSource(src) == noErr
