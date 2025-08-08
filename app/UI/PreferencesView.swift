@@ -24,7 +24,7 @@ final class PreferencesViewModel: ObservableObject {
 
     private func saveLayoutPair() {
         let pair = LayoutPair(fromID: fromID, toID: toID)
-        saveLayoutPair(pair)
+        Languiny.saveLayoutPair(pair)
     }
 
     private func saveBehavior() {
