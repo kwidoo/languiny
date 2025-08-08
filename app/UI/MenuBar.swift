@@ -12,6 +12,7 @@ final class MenuBar {
     private func setup() {
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: nil)
+            button.image?.isTemplate = true
         }
         menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Enable", action: #selector(toggleEnable), keyEquivalent: ""))
@@ -19,6 +20,10 @@ final class MenuBar {
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    func updateAccessibilityStatus(_ trusted: Bool) {
+        statusItem.button?.contentTintColor = trusted ? .systemGreen : .systemRed
     }
 
     @objc private func toggleEnable() { Logger.log("Toggle enable") }
