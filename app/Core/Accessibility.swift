@@ -3,10 +3,10 @@ import AppKit
 import ApplicationServices
 
 func isTrustedForAccessibility() -> Bool {
-    let options: NSDictionary = [
-        kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false
+    let options: [CFString: Any] = [
+        kAXTrustedCheckOptionPrompt: false,
     ]
-    return AXIsProcessTrustedWithOptions(options)
+    return AXIsProcessTrustedWithOptions(options as CFDictionary)
 }
 
 func openAccessibilitySettings() {
