@@ -11,6 +11,7 @@ final class InputTap {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let wordBuffer = WordBuffer()
+    private var activePID: pid_t?
 
     // Flag to avoid handling events we synthesize ourselves
     private var isInjecting = false
@@ -19,6 +20,12 @@ final class InputTap {
     // Debug options
     var injectionEnabled = true
     private let usePasteboardFallback = false
+
+    /// Forward word boundary callbacks to consumers.
+    var onWordBoundary: ((String, Character?) -> Void)? {
+        get { wordBuffer.onWordBoundary }
+        set { wordBuffer.onWordBoundary = newValue }
+    }
 
     /// Prepare the event tap and run loop source.
     func setup() {
@@ -100,10 +107,16 @@ final class InputTap {
         }
     }
 
-    private func handleEvent(_ event: CGEvent, type: CGEventType) -> Unmanaged<CGEvent>? {
+    func handleEvent(_ event: CGEvent, type: CGEventType) -> Unmanaged<CGEvent>? {
         if isInjecting || !injectionEnabled {
             return Unmanaged.passUnretained(event)
         }
+
+        let pid = pid_t(event.getIntegerValueField(.eventSourceUnixProcessID))
+        if let last = activePID, last != pid {
+            wordBuffer.flush()
+        }
+        activePID = pid
 
         switch type {
         case .tapDisabledByTimeout:
@@ -124,8 +137,20 @@ final class InputTap {
                 return nil
             }
 
-            if wordBuffer.isBoundary(event: event) {
+            // Arrow keys flush the buffer
+            if [123, 124, 125, 126].contains(Int(keyCode)) {
                 wordBuffer.flush()
+                return Unmanaged.passUnretained(event)
+            }
+
+            // Backspace mutates buffer
+            if keyCode == 51 {
+                wordBuffer.backspace()
+                return Unmanaged.passUnretained(event)
+            }
+
+            if let sep = wordBuffer.boundary(for: event) {
+                wordBuffer.flush(separator: sep)
             } else {
                 var chars = [UniChar](repeating: 0, count: 4)
                 var length = 0
