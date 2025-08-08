@@ -175,6 +175,14 @@ final class InputTap {
         }
         activePID = pid
 
+        #if canImport(AppKit)
+            if let app = NSRunningApplication(processIdentifier: pid),
+               let bundleID = app.bundleIdentifier,
+               !isAppEnabled(bundleID: bundleID) {
+                return Unmanaged.passUnretained(event)
+            }
+        #endif
+
         switch type {
         case .tapDisabledByTimeout:
             if let tap = eventTap {
@@ -186,6 +194,15 @@ final class InputTap {
             let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
             let flags = event.flags
             Logger.log("keyDown code=\(keyCode) flags=\(flags.rawValue)", verbose: true)
+
+            let whitelist = loadCmdCtrlWhitelist()
+            if (flags.contains(.maskCommand) || flags.contains(.maskControl)) &&
+                !whitelist.contains(keyCode) {
+                return Unmanaged.passUnretained(event)
+            }
+            if shouldBypassOption() && flags.contains(.maskAlternate) {
+                return Unmanaged.passUnretained(event)
+            }
 
             // Option+Space hotkey -> inject prototype string
             if flags.contains(.maskAlternate) && keyCode == 49 {
@@ -224,9 +241,18 @@ final class InputTap {
             }
         case .keyUp:
             let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+            let flags = event.flags
             if suppressedKeyUp == keyCode {
                 suppressedKeyUp = nil
                 return nil
+            }
+            let whitelist = loadCmdCtrlWhitelist()
+            if (flags.contains(.maskCommand) || flags.contains(.maskControl)) &&
+                !whitelist.contains(keyCode) {
+                return Unmanaged.passUnretained(event)
+            }
+            if shouldBypassOption() && flags.contains(.maskAlternate) {
+                return Unmanaged.passUnretained(event)
             }
             Logger.log("keyUp", verbose: true)
         default:
