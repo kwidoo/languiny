@@ -133,6 +133,12 @@ final class InputTap {
             Logger.log("boundary: missing layout info", verbose: true)
             return
         }
+        guard autoFixEnabled() else { return }
+        if shouldIgnoreUrlsEmails() && looksLikeUrlOrEmail(word) {
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            Logger.log("ignore: \(word) in \(Int(elapsed))ms", verbose: true)
+            return
+        }
         let currentLayout: Int32
         let targetLayout: Int32
         let targetID: String
@@ -162,6 +168,16 @@ final class InputTap {
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
             Logger.log("no switch: \(word) in \(Int(elapsed))ms", verbose: true)
         }
+    }
+
+    private func looksLikeUrlOrEmail(_ word: String) -> Bool {
+        if word.range(of: #"^[A-Za-z]+://"#, options: .regularExpression) != nil {
+            return true
+        }
+        if word.range(of: #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#, options: [.regularExpression, .caseInsensitive]) != nil {
+            return true
+        }
+        return false
     }
 
     func handleEvent(_ event: CGEvent, type: CGEventType) -> Unmanaged<CGEvent>? {
