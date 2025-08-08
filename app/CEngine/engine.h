@@ -6,6 +6,7 @@ extern "C" {
 
 const char* RemapWord(const char* utf8, int fromLayout, int toLayout);
 int ShouldSwitch(const char* utf8, int currentLayout);
+const char* EngineVersion();
 void FreeCString(const char* ptr);
 
 #ifdef __cplusplus

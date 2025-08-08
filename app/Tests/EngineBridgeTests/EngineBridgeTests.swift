@@ -10,4 +10,8 @@ final class EngineBridgeTests: XCTestCase {
     func testShouldSwitch() {
         XCTAssertTrue(shouldSwitch("ghbdtn", current: 0))
     }
+
+    func testEngineVersion() {
+        XCTAssertFalse(engineVersion().isEmpty)
+    }
 }

@@ -17,6 +17,15 @@ int ShouldSwitch(const char* utf8, int currentLayout) {
     return utf8 && strcmp(utf8, "ghbdtn") == 0 && currentLayout == 0;
 }
 
+const char* EngineVersion() {
+    const char* ver = "0.0.1";
+    char* out = malloc(strlen(ver) + 1);
+    if (out) {
+        strcpy(out, ver);
+    }
+    return out;
+}
+
 void FreeCString(const char* ptr) {
     free((void*)ptr);
 }

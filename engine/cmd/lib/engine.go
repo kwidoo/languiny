@@ -13,6 +13,8 @@ import (
 	"github.com/you/kbd-switch/engine/internal/remap"
 )
 
+var version = "0.0.1"
+
 //export RemapWord
 func RemapWord(cstr *C.char, fromLayout C.int, toLayout C.int) *C.char {
 	if cstr == nil {
@@ -40,6 +42,11 @@ func ShouldSwitch(cstr *C.char, currentLayout C.int) C.int {
 		return 1
 	}
 	return 0
+}
+
+//export EngineVersion
+func EngineVersion() *C.char {
+	return C.CString(version)
 }
 
 //export FreeCString
