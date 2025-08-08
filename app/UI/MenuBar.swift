@@ -6,12 +6,14 @@ final class MenuBar {
     private var menu: NSMenu!
     private var toggleItem: NSMenuItem!
     private var enableItem: NSMenuItem!
+    private var prefsWindow: NSWindow?
 
     private var isEnabled = true
     var onToggleEnable: ((Bool) -> Void)?
 
     init() {
         setup()
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLayoutPairChange), name: layoutPairChangedNotification, object: nil)
     }
 
     private func setup() {
@@ -75,7 +77,16 @@ final class MenuBar {
         onToggleEnable?(isEnabled)
     }
 
-    @objc private func openPrefs() { Logger.log("Open prefs") }
+    @objc private func openPrefs() {
+        if prefsWindow == nil {
+            let controller = NSHostingController(rootView: PreferencesView())
+            let window = NSWindow(contentViewController: controller)
+            window.title = "Preferences"
+            prefsWindow = window
+        }
+        prefsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
 
     @objc private func openAbout() {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -88,4 +99,6 @@ final class MenuBar {
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
+
+    @objc private func handleLayoutPairChange() { updateToggleTitle() }
 }
