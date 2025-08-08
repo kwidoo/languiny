@@ -1,3 +1,3 @@
-module github.com/you/kbd-switch/engine
+module github.com/kwidoo/languiny/engine
 
 go 1.22

@@ -20,13 +20,18 @@ final class MenuBar {
             button.image?.isTemplate = true
         }
         menu = NSMenu()
-        enableItem = NSMenuItem(title: "Disable", action: #selector(toggleEnable), keyEquivalent: "")
+        enableItem = NSMenuItem(
+            title: "Disable", action: #selector(toggleEnable), keyEquivalent: "")
+        enableItem.target = self
         menu.addItem(enableItem)
-        toggleItem = NSMenuItem(title: "Toggle Layout", action: #selector(toggleLayout), keyEquivalent: "")
+        toggleItem = NSMenuItem(
+            title: "Toggle Layout", action: #selector(toggleLayout), keyEquivalent: "")
         menu.addItem(toggleItem)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "About Languiny", action: #selector(openAbout), keyEquivalent: ""))
+        menu.addItem(
+            NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ","))
+        menu.addItem(
+            NSMenuItem(title: "About Languiny", action: #selector(openAbout), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
         updateToggleTitle()
@@ -40,7 +45,8 @@ final class MenuBar {
     private func updateAccessibility(_ trusted: Bool) {
         DispatchQueue.main.async {
             self.statusItem.button?.contentTintColor = trusted ? .controlAccentColor : .systemRed
-            self.statusItem.button?.toolTip = trusted ? "Accessibility: Enabled" : "Accessibility: Missing"
+            self.statusItem.button?.toolTip =
+                trusted ? "Accessibility: Enabled" : "Accessibility: Missing"
         }
     }
 
@@ -49,7 +55,8 @@ final class MenuBar {
         DispatchQueue.main.async {
             self.enableItem.title = enabled ? "Disable" : "Enable"
             let symbol = enabled ? "keyboard" : "keyboard.slash"
-            self.statusItem.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+            self.statusItem.button?.image = NSImage(
+                systemSymbolName: symbol, accessibilityDescription: nil)
             self.statusItem.button?.image?.isTemplate = true
         }
     }
