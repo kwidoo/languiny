@@ -1,5 +1,8 @@
 import Foundation
 import ApplicationServices
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Captures global key events using a CGEventTap and forwards
 /// characters into a simple word buffer.
@@ -7,6 +10,14 @@ final class InputTap {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let wordBuffer = WordBuffer()
+
+    // Flag to avoid handling events we synthesize ourselves
+    private var isInjecting = false
+    private var suppressedKeyUp: CGKeyCode?
+
+    // Debug options
+    var injectionEnabled = true
+    private let usePasteboardFallback = false
 
     /// Prepare the event tap and run loop source.
     func setup() {
@@ -46,7 +57,54 @@ final class InputTap {
         }
     }
 
+    /// Inject ASCII text into the focused application using synthetic keyboard events.
+    private func inject(text: String) {
+        guard !text.isEmpty else { return }
+        isInjecting = true
+        defer { isInjecting = false }
+
+        if usePasteboardFallback {
+#if canImport(AppKit)
+            let pasteboard = NSPasteboard.general
+            let original = pasteboard.string(forType: .string)
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+
+            // Send Command+V to paste
+            let vKey: CGKeyCode = 9
+            let down = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: true)
+            down?.flags = .maskCommand
+            down?.post(tap: .cghidEventTap)
+            let up = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: false)
+            up?.flags = .maskCommand
+            up?.post(tap: .cghidEventTap)
+
+            // Restore previous pasteboard content
+            pasteboard.clearContents()
+            if let original = original {
+                pasteboard.setString(original, forType: .string)
+            }
+#endif
+            return
+        }
+
+        for scalar in text.unicodeScalars {
+            let chars: [UniChar] = [UniChar(scalar.value)]
+            let down = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)
+            down?.keyboardSetUnicodeString(stringLength: 1, unicodeString: chars)
+            down?.post(tap: .cghidEventTap)
+
+            let up = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
+            up?.keyboardSetUnicodeString(stringLength: 1, unicodeString: chars)
+            up?.post(tap: .cghidEventTap)
+        }
+    }
+
     private func handleEvent(_ event: CGEvent, type: CGEventType) -> Unmanaged<CGEvent>? {
+        if isInjecting || !injectionEnabled {
+            return Unmanaged.passUnretained(event)
+        }
+
         switch type {
         case .tapDisabledByTimeout:
             if let tap = eventTap {
@@ -55,9 +113,16 @@ final class InputTap {
             }
             return nil
         case .keyDown:
-            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            let flags = event.flags.rawValue
-            Logger.log("keyDown code=\(keyCode) flags=\(flags)", verbose: true)
+            let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+            let flags = event.flags
+            Logger.log("keyDown code=\(keyCode) flags=\(flags.rawValue)", verbose: true)
+
+            // Option+Space hotkey -> inject prototype string
+            if flags.contains(.maskAlternate) && keyCode == 49 {
+                inject(text: "<REPLACED>")
+                suppressedKeyUp = keyCode
+                return nil
+            }
 
             if wordBuffer.isBoundary(event: event) {
                 wordBuffer.flush()
@@ -76,6 +141,11 @@ final class InputTap {
                 }
             }
         case .keyUp:
+            let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+            if suppressedKeyUp == keyCode {
+                suppressedKeyUp = nil
+                return nil
+            }
             Logger.log("keyUp", verbose: true)
         default:
             break
