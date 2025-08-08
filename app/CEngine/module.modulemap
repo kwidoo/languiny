@@ -1,0 +1,4 @@
+module engine {
+    header "engine.h"
+    export *
+}
