@@ -171,10 +171,13 @@ final class InputTap {
     }
 
     private func looksLikeUrlOrEmail(_ word: String) -> Bool {
-        if word.range(of: #"^[A-Za-z]+://"#, options: .regularExpression) != nil {
+        let trimmed = word.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?:;)]}"))
+        // RFC 3986 scheme: ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+        if trimmed.range(of: #"^[A-Za-z][A-Za-z0-9+.-]*://"#, options: .regularExpression) != nil {
             return true
         }
-        if word.range(of: #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#, options: [.regularExpression, .caseInsensitive]) != nil {
+        if trimmed.range(of: #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#,
+                         options: [.regularExpression, .caseInsensitive]) != nil {
             return true
         }
         return false
