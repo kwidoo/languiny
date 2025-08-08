@@ -1,5 +1,6 @@
-import SwiftUI
 import AppKit
+import SwiftUI
+import UniformTypeIdentifiers
 
 final class PreferencesViewModel: ObservableObject {
     @Published var layouts: [InputSourceInfo] = listInputSources()
@@ -35,7 +36,8 @@ final class PreferencesViewModel: ObservableObject {
 
     private func saveApps() {
         saveAppListMode(appListMode)
-        let ids = appListText
+        let ids =
+            appListText
             .split(whereSeparator: { $0.isNewline })
             .map { String($0).trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
@@ -46,12 +48,9 @@ final class PreferencesViewModel: ObservableObject {
         guard let data = exportPreferences() else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "languiny_prefs.json"
-import UniformTypeIdentifiers
 
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "languiny_prefs.json"
         if #available(macOS 12.0, *) {
-            panel.allowedContentTypes = [.json]
+            panel.allowedContentTypes = [UTType.json]
         } else {
             panel.allowedFileTypes = ["json"]
         }
@@ -62,9 +61,9 @@ import UniformTypeIdentifiers
 
     func importPrefs() {
         let panel = NSOpenPanel()
-        let panel = NSOpenPanel()
+
         if #available(macOS 12.0, *) {
-            panel.allowedContentTypes = [.json]
+            panel.allowedContentTypes = [UTType.json]
         } else {
             panel.allowedFileTypes = ["json"]
         }
@@ -140,4 +139,3 @@ struct PreferencesView: View {
         .frame(width: 400, height: 400)
     }
 }
-

@@ -6,6 +6,7 @@ final class MenuBar {
     private var menu: NSMenu!
     private var toggleItem: NSMenuItem!
     private var enableItem: NSMenuItem!
+    private var quitItem: NSMenuItem!
     private var prefsWindow: NSWindow?
 
     private var isEnabled = true
@@ -13,7 +14,9 @@ final class MenuBar {
 
     init() {
         setup()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleLayoutPairChange), name: layoutPairChangedNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleLayoutPairChange), name: layoutPairChangedNotification,
+            object: nil)
     }
 
     private func setup() {
@@ -30,11 +33,17 @@ final class MenuBar {
             title: "Toggle Layout", action: #selector(toggleLayout), keyEquivalent: "")
         menu.addItem(toggleItem)
         menu.addItem(.separator())
-        menu.addItem(
-            NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ","))
-        menu.addItem(
-            NSMenuItem(title: "About Languiny", action: #selector(openAbout), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
+        let prefsItem: NSMenuItem = NSMenuItem(
+            title: "Preferences…", action: #selector(openPrefs), keyEquivalent: "")
+        prefsItem.target = self
+        menu.addItem(prefsItem)
+        let aboutItem: NSMenuItem = NSMenuItem(
+            title: "About Languiny", action: #selector(openAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+        quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
+        menu.addItem(quitItem)
+        quitItem.target = self
         statusItem.menu = menu
         updateToggleTitle()
     }
