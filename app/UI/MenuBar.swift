@@ -25,9 +25,3 @@ final class MenuBar {
     @objc private func openPrefs() { Logger.log("Open prefs") }
     @objc private func quit() { NSApp.terminate(nil) }
 }
-
-enum Logger {
-    static func log(_ msg: String) {
-        NSLog("[Languiny] %@", msg)
-    }
-}
