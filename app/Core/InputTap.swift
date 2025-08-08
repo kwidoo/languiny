@@ -134,7 +134,8 @@ final class InputTap {
             return
         }
         guard autoFixEnabled() else { return }
-        if shouldIgnoreUrlsEmails() && looksLikeUrlOrEmail(word) {
+        let candidate = word.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?:;)]}"))
+        if shouldIgnoreUrlsEmails() && looksLikeUrlOrEmail(candidate) {
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
             Logger.log("ignore: \(word) in \(Int(elapsed))ms", verbose: true)
             return
