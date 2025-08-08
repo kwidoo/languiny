@@ -1,7 +1,8 @@
-import Foundation
 import ApplicationServices
+import Foundation
+
 #if canImport(AppKit)
-import AppKit
+    import AppKit
 #endif
 
 /// Captures global key events using a CGEventTap and forwards
@@ -23,8 +24,7 @@ final class InputTap {
     func setup() {
         guard eventTap == nil else { return }
 
-        let mask = (1 << CGEventType.keyDown.rawValue) |
-                   (1 << CGEventType.keyUp.rawValue)
+        let mask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
 
         eventTap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
@@ -64,27 +64,27 @@ final class InputTap {
         defer { isInjecting = false }
 
         if usePasteboardFallback {
-#if canImport(AppKit)
-            let pasteboard = NSPasteboard.general
-            let original = pasteboard.string(forType: .string)
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
+            #if canImport(AppKit)
+                let pasteboard = NSPasteboard.general
+                let original = pasteboard.string(forType: .string)
+                pasteboard.clearContents()
+                pasteboard.setString(text, forType: .string)
 
-            // Send Command+V to paste
-            let vKey: CGKeyCode = 9
-            let down = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: true)
-            down?.flags = .maskCommand
-            down?.post(tap: .cghidEventTap)
-            let up = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: false)
-            up?.flags = .maskCommand
-            up?.post(tap: .cghidEventTap)
+                // Send Command+V to paste
+                let vKey: CGKeyCode = 9
+                let down = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: true)
+                down?.flags = .maskCommand
+                down?.post(tap: .cghidEventTap)
+                let up = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: false)
+                up?.flags = .maskCommand
+                up?.post(tap: .cghidEventTap)
 
-            // Restore previous pasteboard content
-            pasteboard.clearContents()
-            if let original = original {
-                pasteboard.setString(original, forType: .string)
-            }
-#endif
+                // Restore previous pasteboard content
+                pasteboard.clearContents()
+                if let original = original {
+                    pasteboard.setString(original, forType: .string)
+                }
+            #endif
             return
         }
 
@@ -155,7 +155,7 @@ final class InputTap {
     }
 
     private static let eventCallback: CGEventTapCallBack = { _, type, event, refcon in
-        guard let refcon = refcon, let event = event else { return nil }
+        guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
         let tap = Unmanaged<InputTap>.fromOpaque(refcon).takeUnretainedValue()
         return tap.handleEvent(event, type: type)
     }

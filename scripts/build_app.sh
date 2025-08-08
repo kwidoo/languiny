@@ -7,19 +7,18 @@ DIST="$ROOT/dist"
 ENG_OUT="$ROOT/engine/build"
 INC="$ENG_OUT/include"
 LIB="$ENG_OUT"
+LIB_A="$ENG_OUT/libengine.a"
 
 mkdir -p "$DIST"
 
 # Ensure engine is built
-if [ ! -f "$LIB/libengine.a" ]; then
+if [ ! -f "$LIB_A" ]; then
   echo "Engine not built. Run: make build-engine"
   exit 1
 fi
 
-# Use SwiftPM to build a minimal app and then create a bundle
-# Create Package.swift if missing
-if [ ! -f "$APP/Package.swift" ]; then
-  cat > "$APP/Package.swift" <<'SWIFT'
+# Always regenerate Package.swift to ensure clean flags
+cat > "$APP/Package.swift" <<'SWIFT'
 // swift-tools-version:5.9
 import PackageDescription
 
@@ -35,21 +34,18 @@ let package = Package(
             sources: ["App", "Core", "UI", "Bridging"],
             resources: [ .process("Resources") ],
             linkerSettings: [
-                .unsafeFlags(["-L\(LIB_PATH)", "-lengine", "-rpath", "@executable_path/../Frameworks"]) 
+                .unsafeFlags(["-Xlinker", "-force_load", "-Xlinker", "__LIB_A__"]) 
             ]
         )
     ]
 )
 SWIFT
-fi
 
-# Build app with library path injected
-LIB_PATH_ESCAPED=${LIB//\//\\/}
-sed -i '' "s|(LIB_PATH)|$LIB_PATH_ESCAPED|g" "$APP/Package.swift"
+# Inject static lib path (use @ delimiter to avoid escaping slashes)
+sed -i '' "s@__LIB_A__@$LIB_A@g" "$APP/Package.swift"
 
-# Provide module map via bridging header search path
+# Provide headers for any cgo-produced headers if needed
 export CGO_CFLAGS="-I$INC"
-export CGO_LDFLAGS="-L$LIB -lengine"
 
 # Build
 (cd "$APP" && swift build -c release)
@@ -66,8 +62,6 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS" "$FRAMEWORKS" "$RESOURCES"
 
 cp "$APP/.build/release/Languiny" "$MACOS/$APP_NAME"
-# Copy dynamic lib to bundle for runtime (even if we link static)
-cp "$LIB/libengine.dylib" "$FRAMEWORKS/"
 
 # Basic Info.plist
 cat > "$CONTENTS/Info.plist" <<PLIST
@@ -80,11 +74,20 @@ cat > "$CONTENTS/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>com.example.languiny</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>LSUIElement</key><true/>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>This app may use Apple Events to integrate with macOS features.</string>
+  <key>NSSystemAdministrationUsageDescription</key>
+  <string>Accessibility permissions are required for keyboard monitoring via event taps.</string>
 </dict>
 </plist>
 PLIST
 
 # Copy resources
 rsync -a "$APP/Resources/" "$RESOURCES/" || true
+
+# Ad-hoc sign bundle for local runs
+if command -v codesign >/dev/null 2>&1; then
+  codesign --force --deep --sign - "$APP_BUNDLE" || true
+fi
 
 echo "App bundle at $APP_BUNDLE"

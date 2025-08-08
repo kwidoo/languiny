@@ -1,4 +1,4 @@
-SHELL := /bin/zsh
+SHELL := /bin/bash
 
 .PHONY: bootstrap build-engine build-app build clean run fmt test
 
