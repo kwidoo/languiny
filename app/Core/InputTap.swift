@@ -27,6 +27,12 @@ final class InputTap {
         set { wordBuffer.onWordBoundary = newValue }
     }
 
+    init() {
+        wordBuffer.onWordBoundary = { [weak self] word, sep in
+            self?.handleBoundary(word: word, separator: sep)
+        }
+    }
+
     /// Prepare the event tap and run loop source.
     func setup() {
         guard eventTap == nil else { return }
@@ -61,6 +67,19 @@ final class InputTap {
         if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
         if let src = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), src, .commonModes)
+        }
+    }
+
+    /// Send backspace events to remove last `count` characters.
+    private func suppressKeystrokes(count: Int) {
+        guard count > 0 else { return }
+        isInjecting = true
+        defer { isInjecting = false }
+        for _ in 0..<count {
+            let down = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: true)
+            down?.post(tap: .cghidEventTap)
+            let up = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: false)
+            up?.post(tap: .cghidEventTap)
         }
     }
 
@@ -104,6 +123,44 @@ final class InputTap {
             let up = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
             up?.keyboardSetUnicodeString(stringLength: 1, unicodeString: chars)
             up?.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Handle a completed word and decide whether to switch layouts and remap.
+    private func handleBoundary(word: String, separator: Character?) {
+        let start = CFAbsoluteTimeGetCurrent()
+        guard let pair = loadLayoutPair(), let currentID = getCurrentLayoutID() else {
+            Logger.log("boundary: missing layout info", verbose: true)
+            return
+        }
+        let currentLayout: Int32
+        let targetLayout: Int32
+        let targetID: String
+        if currentID == pair.fromID {
+            currentLayout = 0
+            targetLayout = 1
+            targetID = pair.toID
+        } else if currentID == pair.toID {
+            currentLayout = 1
+            targetLayout = 0
+            targetID = pair.fromID
+        } else {
+            Logger.log("boundary: current layout not in pair", verbose: true)
+            return
+        }
+
+        if shouldSwitch(word, current: currentLayout) {
+            let mapped = remapWord(word, from: currentLayout, to: targetLayout) ?? word
+            let sepCount = separator == nil ? 0 : 1
+            suppressKeystrokes(count: word.count + sepCount)
+            _ = setLayout(by: targetID)
+            let text = mapped + (separator.map { String($0) } ?? "")
+            inject(text: text)
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            Logger.log("switch: \(word) -> \(mapped) in \(Int(elapsed))ms")
+        } else {
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            Logger.log("no switch: \(word) in \(Int(elapsed))ms", verbose: true)
         }
     }
 
