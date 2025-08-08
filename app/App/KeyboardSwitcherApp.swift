@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Logger.log("Languiny starting…")
         menuBar = MenuBar()
+        ensureDefaultLayoutPair()
+        menuBar.updateToggleTitle()
         let trusted = isTrustedForAccessibility()
         menuBar.updateAccessibilityStatus(trusted)
         startAXStatusTimer()
