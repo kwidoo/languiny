@@ -62,7 +62,12 @@ import UniformTypeIdentifiers
 
     func importPrefs() {
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["json"]
+        let panel = NSOpenPanel()
+        if #available(macOS 12.0, *) {
+            panel.allowedContentTypes = [.json]
+        } else {
+            panel.allowedFileTypes = ["json"]
+        }
         if panel.runModal() == .OK, let url = panel.url, let data = try? Data(contentsOf: url) {
             importPreferences(data: data)
             // Reload from defaults
