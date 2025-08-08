@@ -10,6 +10,10 @@ private let bypassOptionKey = "bypassOption"
 private let cmdCtrlWhitelistKey = "cmdCtrlWhitelist"
 private let appListKey = "appList"
 private let appListModeKey = "appListMode"
+private let autoFixKey = "autoFixOnBoundary"
+private let ignoreURLsKey = "ignoreUrlsEmails"
+
+let layoutPairChangedNotification = Notification.Name("layoutPairChanged")
 
 func loadLayoutPair() -> LayoutPair? {
     guard let data = UserDefaults.standard.data(forKey: layoutPairKey) else {
@@ -21,6 +25,7 @@ func loadLayoutPair() -> LayoutPair? {
 func saveLayoutPair(_ pair: LayoutPair) {
     if let data = try? JSONEncoder().encode(pair) {
         UserDefaults.standard.set(data, forKey: layoutPairKey)
+        NotificationCenter.default.post(name: layoutPairChangedNotification, object: nil)
     }
 }
 
@@ -93,4 +98,61 @@ func toggleLayoutPair() -> Bool {
     }
     let next = current == pair.fromID ? pair.toID : pair.fromID
     return setLayout(by: next)
+}
+
+// MARK: - Behavior Options
+
+func autoFixEnabled() -> Bool {
+    if UserDefaults.standard.object(forKey: autoFixKey) == nil { return true }
+    return UserDefaults.standard.bool(forKey: autoFixKey)
+}
+
+func setAutoFixEnabled(_ value: Bool) {
+    UserDefaults.standard.set(value, forKey: autoFixKey)
+}
+
+func shouldIgnoreUrlsEmails() -> Bool {
+    if UserDefaults.standard.object(forKey: ignoreURLsKey) == nil { return true }
+    return UserDefaults.standard.bool(forKey: ignoreURLsKey)
+}
+
+func setIgnoreUrlsEmails(_ value: Bool) {
+    UserDefaults.standard.set(value, forKey: ignoreURLsKey)
+}
+
+// MARK: - Export / Import
+
+struct PreferencesData: Codable {
+    var layoutPair: LayoutPair
+    var bypassOption: Bool
+    var cmdCtrlWhitelist: [UInt16]
+    var appList: [String]
+    var appListMode: String
+    var autoFixOnBoundary: Bool
+    var ignoreUrlsEmails: Bool
+}
+
+func exportPreferences() -> Data? {
+    guard let pair = loadLayoutPair() else { return nil }
+    let prefs = PreferencesData(
+        layoutPair: pair,
+        bypassOption: shouldBypassOption(),
+        cmdCtrlWhitelist: Array(loadCmdCtrlWhitelist()),
+        appList: Array(loadAppList()),
+        appListMode: loadAppListMode().rawValue,
+        autoFixOnBoundary: autoFixEnabled(),
+        ignoreUrlsEmails: shouldIgnoreUrlsEmails()
+    )
+    return try? JSONEncoder().encode(prefs)
+}
+
+func importPreferences(data: Data) {
+    guard let prefs = try? JSONDecoder().decode(PreferencesData.self, from: data) else { return }
+    saveLayoutPair(prefs.layoutPair)
+    setBypassOption(prefs.bypassOption)
+    saveCmdCtrlWhitelist(Set(prefs.cmdCtrlWhitelist))
+    saveAppList(Set(prefs.appList))
+    saveAppListMode(AppListMode(rawValue: prefs.appListMode) ?? .blacklist)
+    setAutoFixEnabled(prefs.autoFixOnBoundary)
+    setIgnoreUrlsEmails(prefs.ignoreUrlsEmails)
 }
