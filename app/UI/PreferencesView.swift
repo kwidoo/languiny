@@ -46,7 +46,15 @@ final class PreferencesViewModel: ObservableObject {
         guard let data = exportPreferences() else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "languiny_prefs.json"
-        panel.allowedFileTypes = ["json"]
+import UniformTypeIdentifiers
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "languiny_prefs.json"
+        if #available(macOS 12.0, *) {
+            panel.allowedContentTypes = [.json]
+        } else {
+            panel.allowedFileTypes = ["json"]
+        }
         if panel.runModal() == .OK, let url = panel.url {
             try? data.write(to: url)
         }
