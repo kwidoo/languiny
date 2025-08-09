@@ -125,6 +125,7 @@ struct PreferencesView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .onChange(of: model.appListMode) { _ in model.onAppsChange() }
                     TextEditor(text: $model.appListText)
+                        .font(.system(.body, design: .monospaced))
                         .frame(minHeight: 80)
                         .onChange(of: model.appListText) { _ in model.onAppsChange() }
                 }

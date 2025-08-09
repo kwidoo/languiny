@@ -16,6 +16,7 @@ final class InputTap {
     // Flag to avoid handling events we synthesize ourselves
     private var isInjecting = false
     private var suppressedKeyUp: CGKeyCode?
+    private let boundaryMetrics = RollingMetrics(capacity: 100)
 
     // Debug options
     var injectionEnabled = true
@@ -137,7 +138,8 @@ final class InputTap {
         let candidate = word.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?:;)]}"))
         if shouldIgnoreUrlsEmails() && looksLikeUrlOrEmail(candidate) {
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            Logger.log("ignore: \(word) in \(Int(elapsed))ms", verbose: true)
+            boundaryMetrics.record(elapsed)
+            Logger.log("ignore: \(word) in \(Int(elapsed))ms (avg \(Int(boundaryMetrics.average()))ms)", verbose: true)
             return
         }
         let currentLayout: Int32
@@ -164,10 +166,12 @@ final class InputTap {
             let text = mapped + (separator.map { String($0) } ?? "")
             inject(text: text)
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            Logger.log("switch: \(word) -> \(mapped) in \(Int(elapsed))ms")
+            boundaryMetrics.record(elapsed)
+            Logger.log("switch: \(word) -> \(mapped) in \(Int(elapsed))ms (avg \(Int(boundaryMetrics.average()))ms)")
         } else {
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            Logger.log("no switch: \(word) in \(Int(elapsed))ms", verbose: true)
+            boundaryMetrics.record(elapsed)
+            Logger.log("no switch: \(word) in \(Int(elapsed))ms (avg \(Int(boundaryMetrics.average()))ms)", verbose: true)
         }
     }
 
