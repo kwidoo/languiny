@@ -16,3 +16,4 @@ app/Build/
 *.dSYM
 *.dylib
 *.a
+tasks/*
