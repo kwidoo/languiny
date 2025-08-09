@@ -1,19 +1,17 @@
 import AppKit
+import SwiftUI
 
 final class PreferencesWindowController: NSWindowController {
-    private let tabController = NSTabViewController()
+    private let hostingController: NSHostingController<PreferencesRootView>
 
     init() {
-        super.init(window: nil)
-        let window = NSWindow(contentViewController: tabController)
+        hostingController = NSHostingController(rootView: PreferencesRootView())
+        let window = NSWindow(contentViewController: hostingController)
         window.title = "Preferences"
-        window.styleMask = [.titled, .closable, .miniaturizable]
-        window.setContentSize(NSSize(width: 500, height: 400))
-        self.window = window
-
-        let general = GeneralTabViewController()
-        general.title = "General"
-        tabController.addChild(general)
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 600, height: 500))
+        window.minSize = NSSize(width: 560, height: 400)
+        super.init(window: window)
     }
 
     @available(*, unavailable)
