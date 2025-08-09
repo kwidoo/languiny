@@ -19,7 +19,7 @@ mkdir -p "$INCLUDE" "$LIB"
 
 # Create go.mod if missing
 if [ ! -f "$ENG/go.mod" ]; then
-  (cd "$ENG" && go mod init github.com/you/kbd-switch && go mod tidy)
+  (cd "$ENG" && go mod init github.com/kwidoo/languiny && go mod tidy)
 fi
 
 # Build static lib

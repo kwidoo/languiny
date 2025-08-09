@@ -1,10 +1,14 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 @main
 struct KeyboardSwitcherApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    var body: some Scene { Settings { EmptyView() } }
+    var body: some Scene {
+        WindowGroup {
+            Text("Placeholder for Settings")
+        }
+    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {

@@ -9,8 +9,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/you/kbd-switch/engine/internal/detect"
-	"github.com/you/kbd-switch/engine/internal/remap"
+	"github.com/kwidoo/languiny/engine/internal/detect"
+	"github.com/kwidoo/languiny/engine/internal/remap"
 )
 
 var version = "0.0.1"
