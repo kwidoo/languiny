@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var axTimer: Timer?
     private let tap = InputTap()
     private var enabled = true
+    private let settingsStore = SettingsStore.shared
 
     func applicationWillTerminate(_ notification: Notification) {
         axTimer?.invalidate()
@@ -20,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        _ = settingsStore.load()
         Logger.log("Languiny starting…")
         menuBar = MenuBar()
         menuBar.onToggleEnable = { [weak self] newValue in
