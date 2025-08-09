@@ -17,6 +17,7 @@ final class InputTap {
     private var isInjecting = false
     private var suppressedKeyUp: CGKeyCode?
     private let boundaryMetrics = RollingMetrics(capacity: 100)
+    private let settingsStore = SettingsStore.shared
 
     // Debug options
     var injectionEnabled = true
@@ -130,13 +131,14 @@ final class InputTap {
     /// Handle a completed word and decide whether to switch layouts and remap.
     private func handleBoundary(word: String, separator: Character?) {
         let start = CFAbsoluteTimeGetCurrent()
-        guard let pair = loadLayoutPair(), let currentID = getCurrentLayoutID() else {
+        let pair = settingsStore.settings.layouts.pair
+        guard let currentID = getCurrentLayoutID() else {
             Logger.log("boundary: missing layout info", verbose: true)
             return
         }
-        guard autoFixEnabled() else { return }
+        guard settingsStore.settings.retro.enabled else { return }
         let candidate = word.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?:;)]}"))
-        if shouldIgnoreUrlsEmails() && looksLikeUrlOrEmail(candidate) {
+        if settingsStore.settings.rules.ignoreUrlsEmails && looksLikeUrlOrEmail(candidate) {
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
             boundaryMetrics.record(elapsed)
             Logger.log("ignore: \(word) in \(Int(elapsed))ms (avg \(Int(boundaryMetrics.average()))ms)", verbose: true)
@@ -201,9 +203,15 @@ final class InputTap {
 
         #if canImport(AppKit)
             if let app = NSRunningApplication(processIdentifier: pid),
-               let bundleID = app.bundleIdentifier,
-               !isAppEnabled(bundleID: bundleID) {
-                return Unmanaged.passUnretained(event)
+               let bundleID = app.bundleIdentifier {
+                let apps = settingsStore.settings.apps
+                let enabled: Bool
+                if !apps.whitelist.isEmpty {
+                    enabled = apps.whitelist.contains(bundleID)
+                } else {
+                    enabled = !apps.blacklist.contains(bundleID)
+                }
+                if !enabled { return Unmanaged.passUnretained(event) }
             }
         #endif
 
@@ -219,12 +227,12 @@ final class InputTap {
             let flags = event.flags
             Logger.log("keyDown code=\(keyCode) flags=\(flags.rawValue)", verbose: true)
 
-            let whitelist = loadCmdCtrlWhitelist()
+            let whitelist = Set(settingsStore.settings.switching.cmdCtrlWhitelist.map { CGKeyCode($0) })
             if (flags.contains(.maskCommand) || flags.contains(.maskControl)) &&
                 !whitelist.contains(keyCode) {
                 return Unmanaged.passUnretained(event)
             }
-            if shouldBypassOption() && flags.contains(.maskAlternate) {
+            if settingsStore.settings.switching.bypassOption && flags.contains(.maskAlternate) {
                 return Unmanaged.passUnretained(event)
             }
 
@@ -270,12 +278,12 @@ final class InputTap {
                 suppressedKeyUp = nil
                 return nil
             }
-            let whitelist = loadCmdCtrlWhitelist()
+            let whitelist = Set(settingsStore.settings.switching.cmdCtrlWhitelist.map { CGKeyCode($0) })
             if (flags.contains(.maskCommand) || flags.contains(.maskControl)) &&
                 !whitelist.contains(keyCode) {
                 return Unmanaged.passUnretained(event)
             }
-            if shouldBypassOption() && flags.contains(.maskAlternate) {
+            if settingsStore.settings.switching.bypassOption && flags.contains(.maskAlternate) {
                 return Unmanaged.passUnretained(event)
             }
             Logger.log("keyUp", verbose: true)

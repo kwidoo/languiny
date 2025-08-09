@@ -31,7 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.onToggleEnable = { [weak self] newValue in
             self?.setProcessing(newValue)
         }
-        ensureDefaultLayoutPair()
         menuBar.updateToggleTitle()
         let trusted = isTrustedForAccessibility()
         menuBar.updateStatus(enabled: enabled, axGranted: trusted)

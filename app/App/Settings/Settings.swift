@@ -1,5 +1,10 @@
 import Foundation
 
+struct LayoutPair: Codable, Equatable {
+    var fromID: String
+    var toID: String
+}
+
 struct Settings: Codable, Equatable {
     struct Languages: Codable, Equatable {
         var primary: String
@@ -12,6 +17,8 @@ struct Settings: Codable, Equatable {
 
     struct Switching: Codable, Equatable {
         var automatic: Bool
+        var bypassOption: Bool
+        var cmdCtrlWhitelist: [UInt16]
     }
 
     struct Retro: Codable, Equatable {
@@ -20,6 +27,7 @@ struct Settings: Codable, Equatable {
 
     struct Rules: Codable, Equatable {
         var minWordLength: Int
+        var ignoreUrlsEmails: Bool
     }
 
     struct Apps: Codable, Equatable {
@@ -30,6 +38,7 @@ struct Settings: Codable, Equatable {
     struct Layouts: Codable, Equatable {
         var active: [String]
         var languageMap: [String: String]
+        var pair: LayoutPair
     }
 
     struct Hotkeys: Codable, Equatable {

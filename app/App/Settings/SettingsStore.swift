@@ -46,6 +46,18 @@ final class SettingsStore {
         NotificationCenter.default.post(name: .settingsDidChange, object: settings)
     }
 
+    func exportData() -> Data? {
+        try? encoder.encode(settings)
+    }
+
+    func importData(_ data: Data) {
+        if let decoded = try? decoder.decode(Settings.self, from: data) {
+            settings = decoded
+            save()
+            NotificationCenter.default.post(name: .settingsDidChange, object: settings)
+        }
+    }
+
     private func save() {
         if let data = try? encoder.encode(settings) {
             try? data.write(to: url, options: [.atomic])

@@ -8,6 +8,7 @@ final class MenuBar {
     private var enableItem: NSMenuItem!
     private var quitItem: NSMenuItem!
     private var prefsController: PreferencesWindowController?
+    private let settingsStore = SettingsStore.shared
 
     private var isEnabled = true
     var onToggleEnable: ((Bool) -> Void)?
@@ -15,7 +16,7 @@ final class MenuBar {
     init() {
         setup()
         NotificationCenter.default.addObserver(
-            self, selector: #selector(handleLayoutPairChange), name: layoutPairChangedNotification,
+            self, selector: #selector(handleSettingsChange), name: .settingsDidChange,
             object: nil)
     }
 
@@ -74,7 +75,8 @@ final class MenuBar {
 
     func updateToggleTitle() {
         DispatchQueue.main.async {
-            if let pair = loadLayoutPair(), let currentID = getCurrentLayoutID() {
+            let pair = self.settingsStore.settings.layouts.pair
+            if let currentID = getCurrentLayoutID() {
                 let otherID = currentID == pair.fromID ? pair.toID : pair.fromID
                 let name = listInputSources().first { $0.id == otherID }?.name ?? "Toggle Layout"
                 self.toggleItem.title = "Switch to \(name)"
@@ -85,7 +87,10 @@ final class MenuBar {
     }
 
     @objc private func toggleLayout() {
-        if toggleLayoutPair() { updateToggleTitle() }
+        let pair = settingsStore.settings.layouts.pair
+        guard let currentID = getCurrentLayoutID() else { return }
+        let next = currentID == pair.fromID ? pair.toID : pair.fromID
+        if setLayout(by: next) { updateToggleTitle() }
     }
 
     @objc private func toggleEnable() {
@@ -113,5 +118,5 @@ final class MenuBar {
 
     @objc private func quit() { NSApp.terminate(nil) }
 
-    @objc private func handleLayoutPairChange() { updateToggleTitle() }
+    @objc private func handleSettingsChange() { updateToggleTitle() }
 }
