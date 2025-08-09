@@ -37,3 +37,9 @@ func TestPunctuationUnaffected(t *testing.T) {
 		t.Fatalf("punctuation changed: %q", got)
 	}
 }
+
+func BenchmarkRemapWord(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        RemapWord("abcdefghijkl", LayoutEnUS, LayoutRuRU)
+    }
+}
