@@ -27,6 +27,11 @@ struct Settings: Codable, Equatable {
         var whitelist: [String]
     }
 
+    struct Layouts: Codable, Equatable {
+        var active: [String]
+        var languageMap: [String: String]
+    }
+
     struct Hotkeys: Codable, Equatable {
         var toggle: String
     }
@@ -57,6 +62,7 @@ struct Settings: Codable, Equatable {
     var retro: Retro
     var rules: Rules
     var apps: Apps
+    var layouts: Layouts
     var hotkeys: Hotkeys
     var ui: UI
     var learning: Learning

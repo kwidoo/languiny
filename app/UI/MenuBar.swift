@@ -7,7 +7,7 @@ final class MenuBar {
     private var toggleItem: NSMenuItem!
     private var enableItem: NSMenuItem!
     private var quitItem: NSMenuItem!
-    private var prefsWindow: NSWindow?
+    private var prefsController: PreferencesWindowController?
 
     private var isEnabled = true
     var onToggleEnable: ((Bool) -> Void)?
@@ -94,13 +94,10 @@ final class MenuBar {
     }
 
     @objc private func openPrefs() {
-        if prefsWindow == nil {
-            let controller = NSHostingController(rootView: PreferencesView())
-            let window = NSWindow(contentViewController: controller)
-            window.title = "Preferences"
-            prefsWindow = window
+        if prefsController == nil {
+            prefsController = PreferencesWindowController()
         }
-        prefsWindow?.makeKeyAndOrderFront(nil)
+        prefsController?.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
